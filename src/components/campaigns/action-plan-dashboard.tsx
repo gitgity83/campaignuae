@@ -75,17 +75,17 @@ export function ActionPlanDashboard({ tasks, onTaskUpdate, canEdit = false }: Ac
 
   const getStatusColor = (status: ActionPlanTask['status']) => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'in-progress': return 'info';
-      case 'pending': return 'warning';
+      case 'completed': return 'secondary';
+      case 'in-progress': return 'default';
+      case 'pending': return 'destructive';
       default: return 'secondary';
     }
   };
 
   const getPriorityColor = (priority: ActionPlanTask['priority']) => {
     switch (priority) {
-      case 'high': return 'danger';
-      case 'medium': return 'warning';
+      case 'high': return 'destructive';
+      case 'medium': return 'default';
       default: return 'secondary';
     }
   };

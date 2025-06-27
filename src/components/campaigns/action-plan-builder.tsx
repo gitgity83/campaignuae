@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, GripVertical, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,15 +45,15 @@ interface ActionPlanBuilderProps {
 
 const statusColors = {
   'not-started': 'secondary',
-  'in-progress': 'warning',
-  'completed': 'success',
-  'pending': 'danger'
+  'in-progress': 'default',
+  'completed': 'secondary',
+  'pending': 'destructive'
 } as const;
 
 const priorityColors = {
   'low': 'secondary',
-  'medium': 'warning',
-  'high': 'danger'
+  'medium': 'default',
+  'high': 'destructive'
 } as const;
 
 export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderProps) {
@@ -227,7 +226,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
   });
   const [emailInput, setEmailInput] = useState('');
 
-  useState(() => {
+  useEffect(() => {
     if (task) {
       setFormData(task);
     }
