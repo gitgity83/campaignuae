@@ -25,7 +25,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 export interface ActionPlanTask {
@@ -67,7 +66,11 @@ export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderPro
   const [editingTask, setEditingTask] = useState<ActionPlanTask | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const addNewTask = () => {
+  const addNewTask = (event: React.MouseEvent) => {
+    console.log("Add Task button clicked");
+    event.preventDefault();
+    event.stopPropagation();
+    
     const newTask: ActionPlanTask = {
       id: Date.now().toString(),
       title: "",
@@ -78,138 +81,156 @@ export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderPro
       notes: "",
       priority: 'medium'
     };
+    
+    console.log("Setting editing task:", newTask);
     setEditingTask(newTask);
     setIsDialogOpen(true);
   };
 
   const editTask = (task: ActionPlanTask) => {
+    console.log("Edit task clicked:", task);
     setEditingTask(task);
     setIsDialogOpen(true);
   };
 
   const deleteTask = (taskId: string) => {
+    console.log("Delete task:", taskId);
     onTasksChange(tasks.filter(t => t.id !== taskId));
   };
 
+  const handleDialogClose = () => {
+    console.log("Dialog closing");
+    setIsDialogOpen(false);
+    setEditingTask(null);
+  };
+
   const saveTask = (task: ActionPlanTask) => {
+    console.log("Saving task:", task);
     if (tasks.find(t => t.id === task.id)) {
       onTasksChange(tasks.map(t => t.id === task.id ? task : t));
     } else {
       onTasksChange([...tasks, task]);
     }
-    setIsDialogOpen(false);
-    setEditingTask(null);
+    handleDialogClose();
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Action Plan</h3>
-        <Button onClick={addNewTask} size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Task
-        </Button>
-      </div>
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Action Plan</h3>
+          <Button 
+            type="button" 
+            onClick={addNewTask} 
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Task
+          </Button>
+        </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12"></TableHead>
-              <TableHead>Task</TableHead>
-              <TableHead>Assigned To</TableHead>
-              <TableHead>Deadline</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tasks.length === 0 ? (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                  No tasks added yet. Click "Add Task" to get started.
-                </TableCell>
+                <TableHead className="w-12"></TableHead>
+                <TableHead>Task</TableHead>
+                <TableHead>Assigned To</TableHead>
+                <TableHead>Deadline</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead className="w-20">Actions</TableHead>
               </TableRow>
-            ) : (
-              tasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell>
-                    <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{task.title}</div>
-                      {task.description && (
-                        <div className="text-sm text-gray-500 mt-1">{task.description}</div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {task.assignedEmails.map((email, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {email}
-                        </Badge>
-                      ))}
-                      {task.assignedEmails.length === 0 && (
-                        <span className="text-gray-400 text-sm">Unassigned</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {task.deadline ? (
-                      <div className="flex items-center text-sm">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(task.deadline).toLocaleDateString()}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 text-sm">No deadline</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(task.status)}>
-                      {task.status.replace('-', ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getPriorityBadgeVariant(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editTask(task)}
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteTask(task.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {tasks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    No tasks added yet. Click "Add Task" to get started.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                tasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{task.title}</div>
+                        {task.description && (
+                          <div className="text-sm text-gray-500 mt-1">{task.description}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {task.assignedEmails.map((email, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {email}
+                          </Badge>
+                        ))}
+                        {task.assignedEmails.length === 0 && (
+                          <span className="text-gray-400 text-sm">Unassigned</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {task.deadline ? (
+                        <div className="flex items-center text-sm">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {new Date(task.deadline).toLocaleDateString()}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No deadline</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(task.status)}>
+                        {task.status.replace('-', ' ')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getPriorityBadgeVariant(task.priority)}>
+                        {task.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => editTask(task)}
+                        >
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteTask(task.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <TaskEditDialog
         task={editingTask}
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={handleDialogClose}
         onSave={saveTask}
       />
-    </div>
+    </>
   );
 }
 
@@ -234,6 +255,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
   const [emailInput, setEmailInput] = useState('');
 
   useEffect(() => {
+    console.log("TaskEditDialog useEffect - task:", task, "open:", open);
     if (task) {
       setFormData(task);
     } else {
@@ -248,9 +270,12 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
         priority: 'medium'
       });
     }
-  }, [task]);
+  }, [task, open]);
 
-  const addEmail = () => {
+  const addEmail = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
     if (emailInput.trim() && !formData.assignedEmails.includes(emailInput.trim())) {
       setFormData(prev => ({
         ...prev,
@@ -267,15 +292,25 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log("Saving task with data:", formData);
     if (formData.title.trim()) {
       onSave(formData);
     }
   };
 
+  const handleCancel = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl z-[60]">
         <DialogHeader>
           <DialogTitle>
             {task?.id ? 'Edit Task' : 'Add New Task'}
@@ -308,7 +343,12 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="Enter email address"
-                onKeyPress={(e) => e.key === 'Enter' && addEmail()}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addEmail(e as any);
+                  }
+                }}
               />
               <Button onClick={addEmail} type="button">
                 <User className="w-4 h-4 mr-2" />
@@ -322,6 +362,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
                   <button
                     onClick={() => removeEmail(email)}
                     className="ml-1 hover:text-red-600"
+                    type="button"
                   >
                     ×
                   </button>
@@ -392,10 +433,10 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
         </div>
 
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleCancel} type="button">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!formData.title.trim()}>
+          <Button onClick={handleSave} disabled={!formData.title.trim()} type="button">
             {task?.id ? 'Update Task' : 'Add Task'}
           </Button>
         </div>
