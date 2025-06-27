@@ -1,5 +1,6 @@
-
 import { useState } from "react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,15 +8,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { ActionPlanTask } from "./action-plan-builder";
+import { ActionPlanBuilder, ActionPlanTask } from "./action-plan-builder";
 import { useCampaigns } from "@/contexts/campaign-context";
-import { WizardNavigation } from "./wizard-navigation";
-import { CampaignDetailsStep } from "./campaign-details-step";
-import { ActionPlanStep } from "./action-plan-step";
-import { ReviewStep } from "./review-step";
 
 interface CampaignWizardProps {
   open: boolean;
@@ -28,6 +41,7 @@ interface CampaignFormData {
   description: string;
   endDate: string;
   status: 'draft' | 'active';
+  actionPlan: ActionPlanTask[];
 }
 
 const steps = [
@@ -48,6 +62,7 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
       description: "",
       endDate: "",
       status: "draft",
+      actionPlan: [],
     },
   });
 
@@ -117,11 +132,11 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
     }
   };
 
-  const canProceed = (): boolean => {
+  const canProceed = () => {
     const formData = form.getValues();
     switch (currentStep) {
       case 1:
-        return !!(formData.name && formData.description && formData.endDate);
+        return formData.name && formData.description && formData.endDate;
       case 2:
         return true; // Action plan is optional
       case 3:
@@ -144,29 +159,6 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
     setActionPlanTasks(tasks);
   };
 
-  const renderCurrentStep = () => {
-    switch (currentStep) {
-      case 1:
-        return <CampaignDetailsStep control={form.control} />;
-      case 2:
-        return (
-          <ActionPlanStep
-            tasks={actionPlanTasks}
-            onTasksChange={handleTasksChange}
-          />
-        );
-      case 3:
-        return (
-          <ReviewStep
-            formData={form.getValues()}
-            actionPlanTasks={actionPlanTasks}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -175,22 +167,231 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
           <DialogDescription>
             Create a new campaign with detailed action plans and task assignments.
           </DialogDescription>
+          
+          {/* Progress Steps */}
+          <div className="flex items-center justify-between mt-6 mb-8">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div className="flex items-center">
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
+                    ${currentStep >= step.id 
+                      ? 'bg-primary-500 text-white' 
+                      : 'bg-gray-200 text-gray-600'
+                    }
+                  `}>
+                    {currentStep > step.id ? <Check className="w-5 h-5" /> : step.id}
+                  </div>
+                  <div className="ml-3">
+                    <div className="text-sm font-medium">{step.title}</div>
+                    <div className="text-xs text-gray-500">{step.description}</div>
+                  </div>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className={`
+                    w-16 h-0.5 mx-4
+                    ${currentStep > step.id ? 'bg-primary-500' : 'bg-gray-200'}
+                  `} />
+                )}
+              </div>
+            ))}
+          </div>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {renderCurrentStep()}
             
-            <WizardNavigation
-              steps={steps}
-              currentStep={currentStep}
-              canProceed={canProceed()}
-              isLoading={isLoading}
-              onPrevious={prevStep}
-              onNext={nextStep}
-              onCancel={handleClose}
-              onSubmit={() => form.handleSubmit(onSubmit)()}
-            />
+            {/* Step 1: Campaign Details */}
+            {currentStep === 1 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold mb-4">Campaign Details</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="name"
+                  rules={{ required: "Campaign name is required" }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Campaign Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter campaign name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  rules={{ required: "Description is required" }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe the campaign goals and objectives"
+                          rows={4}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    rules={{ required: "End date is required" }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Initial Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Action Plan */}
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                <ActionPlanBuilder
+                  tasks={actionPlanTasks}
+                  onTasksChange={handleTasksChange}
+                />
+              </div>
+            )}
+
+            {/* Step 3: Review */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold">Review Campaign</h3>
+                
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                  <div>
+                    <h4 className="font-medium text-gray-900">Campaign Name</h4>
+                    <p className="text-gray-600">{form.getValues('name')}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-gray-900">Description</h4>
+                    <p className="text-gray-600">{form.getValues('description')}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium text-gray-900">End Date</h4>
+                      <p className="text-gray-600">
+                        {form.getValues('endDate') ? 
+                          new Date(form.getValues('endDate')).toLocaleDateString() : 
+                          'Not set'
+                        }
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium text-gray-900">Status</h4>
+                      <p className="text-gray-600 capitalize">{form.getValues('status')}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-gray-900">Action Plan</h4>
+                    <p className="text-gray-600">
+                      {actionPlanTasks.length > 0 
+                        ? `${actionPlanTasks.length} tasks created`
+                        : 'No tasks added'
+                      }
+                    </p>
+                    {actionPlanTasks.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {actionPlanTasks.slice(0, 3).map((task) => (
+                          <div key={task.id} className="text-sm text-gray-500">
+                            • {task.title}
+                          </div>
+                        ))}
+                        {actionPlanTasks.length > 3 && (
+                          <div className="text-sm text-gray-500">
+                            ... and {actionPlanTasks.length - 3} more tasks
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between pt-6 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+                
+                {currentStep < steps.length ? (
+                  <Button
+                    type="button"
+                    onClick={nextStep}
+                    disabled={!canProceed()}
+                  >
+                    Next
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || !canProceed()}
+                  >
+                    {isLoading ? "Creating Campaign..." : "Create Campaign"}
+                  </Button>
+                )}
+              </div>
+            </div>
           </form>
         </Form>
       </DialogContent>

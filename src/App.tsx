@@ -20,14 +20,12 @@ import Settings from '@/pages/settings';
 import NotFound from '@/pages/NotFound';
 
 function App() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="h-8 w-8 bg-primary-500 rounded-lg"></div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
       </div>
     );
   }
