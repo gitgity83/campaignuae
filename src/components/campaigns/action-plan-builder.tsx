@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, GripVertical, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,9 +23,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 export interface ActionPlanTask {
@@ -61,6 +62,7 @@ export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderPro
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const addNewTask = () => {
+    console.log('Adding new task');
     const newTask: ActionPlanTask = {
       id: Date.now().toString(),
       title: "",
@@ -76,15 +78,18 @@ export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderPro
   };
 
   const editTask = (task: ActionPlanTask) => {
+    console.log('Editing task:', task);
     setEditingTask(task);
     setIsDialogOpen(true);
   };
 
   const deleteTask = (taskId: string) => {
+    console.log('Deleting task:', taskId);
     onTasksChange(tasks.filter(t => t.id !== taskId));
   };
 
   const saveTask = (task: ActionPlanTask) => {
+    console.log('Saving task:', task);
     if (tasks.find(t => t.id === task.id)) {
       onTasksChange(tasks.map(t => t.id === task.id ? task : t));
     } else {
@@ -92,6 +97,14 @@ export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderPro
     }
     setIsDialogOpen(false);
     setEditingTask(null);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    console.log('Dialog close requested:', open);
+    if (!open) {
+      setIsDialogOpen(false);
+      setEditingTask(null);
+    }
   };
 
   return (
@@ -199,7 +212,7 @@ export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderPro
       <TaskEditDialog
         task={editingTask}
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={handleDialogClose}
         onSave={saveTask}
       />
     </div>
@@ -228,6 +241,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
 
   useEffect(() => {
     if (task) {
+      console.log('Setting form data for task:', task);
       setFormData(task);
     }
   }, [task]);
@@ -249,28 +263,44 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Saving task with data:', formData);
+    
     if (formData.title.trim()) {
       onSave(formData);
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.target === e.currentTarget) {
+      e.preventDefault();
+      addEmail();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>
-            {task?.id ? 'Edit Task' : 'Add New Task'}
+            {task?.id && task.id !== formData.id ? 'Edit Task' : 'Add New Task'}
           </DialogTitle>
+          <DialogDescription>
+            Create or edit task details including assignments, deadlines, and priorities.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-4" onClick={(e) => e.stopPropagation()}>
           <div>
             <label className="text-sm font-medium mb-2 block">Task Title *</label>
             <Input
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Enter task title"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
 
@@ -280,6 +310,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the task details"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
 
@@ -290,7 +321,8 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="Enter email address"
-                onKeyPress={(e) => e.key === 'Enter' && addEmail()}
+                onKeyPress={handleKeyPress}
+                onClick={(e) => e.stopPropagation()}
               />
               <Button onClick={addEmail} type="button">
                 <User className="w-4 h-4 mr-2" />
@@ -304,6 +336,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
                   <button
                     onClick={() => removeEmail(email)}
                     className="ml-1 hover:text-red-600"
+                    type="button"
                   >
                     ×
                   </button>
@@ -319,6 +352,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
                 type="date"
                 value={formData.deadline}
                 onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
 
@@ -330,7 +364,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
                   setFormData(prev => ({ ...prev, priority: value }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger onClick={(e) => e.stopPropagation()}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -350,7 +384,7 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
                 setFormData(prev => ({ ...prev, status: value }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger onClick={(e) => e.stopPropagation()}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -369,18 +403,26 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Additional notes, contact details, or links"
               rows={3}
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
-        </div>
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!formData.title.trim()}>
-            {task?.id ? 'Update Task' : 'Add Task'}
-          </Button>
-        </div>
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              type="button"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit"
+              disabled={!formData.title.trim()}
+            >
+              {task?.id && task.id !== formData.id ? 'Update Task' : 'Add Task'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
