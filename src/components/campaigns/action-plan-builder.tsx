@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, GripVertical, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,18 +44,24 @@ interface ActionPlanBuilderProps {
   onTasksChange: (tasks: ActionPlanTask[]) => void;
 }
 
-const statusColors = {
-  'not-started': 'secondary',
-  'in-progress': 'warning',
-  'completed': 'success',
-  'pending': 'danger'
-} as const;
+const getStatusBadgeVariant = (status: ActionPlanTask['status']) => {
+  switch (status) {
+    case 'completed': return 'default';
+    case 'in-progress': return 'secondary';
+    case 'pending': return 'destructive';
+    case 'not-started': return 'outline';
+    default: return 'outline';
+  }
+};
 
-const priorityColors = {
-  'low': 'secondary',
-  'medium': 'warning',
-  'high': 'danger'
-} as const;
+const getPriorityBadgeVariant = (priority: ActionPlanTask['priority']) => {
+  switch (priority) {
+    case 'high': return 'destructive';
+    case 'medium': return 'secondary';
+    case 'low': return 'outline';
+    default: return 'outline';
+  }
+};
 
 export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderProps) {
   const [editingTask, setEditingTask] = useState<ActionPlanTask | null>(null);
@@ -162,12 +168,12 @@ export function ActionPlanBuilder({ tasks, onTasksChange }: ActionPlanBuilderPro
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusColors[task.status]}>
+                    <Badge variant={getStatusBadgeVariant(task.status)}>
                       {task.status.replace('-', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={priorityColors[task.priority]}>
+                    <Badge variant={getPriorityBadgeVariant(task.priority)}>
                       {task.priority}
                     </Badge>
                   </TableCell>
@@ -227,9 +233,20 @@ function TaskEditDialog({ task, open, onOpenChange, onSave }: TaskEditDialogProp
   });
   const [emailInput, setEmailInput] = useState('');
 
-  useState(() => {
+  useEffect(() => {
     if (task) {
       setFormData(task);
+    } else {
+      setFormData({
+        id: '',
+        title: '',
+        description: '',
+        assignedEmails: [],
+        deadline: '',
+        status: 'not-started',
+        notes: '',
+        priority: 'medium'
+      });
     }
   }, [task]);
 
