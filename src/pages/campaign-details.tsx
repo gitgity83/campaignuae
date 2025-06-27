@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Edit, Users, Calendar, Target, CheckCircle } from "lucide-react";
@@ -7,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
+import { ActionPlanDashboard } from "@/components/campaigns/action-plan-dashboard";
+import { ActionPlanTask } from "@/components/campaigns/action-plan-builder";
 
 interface Campaign {
   id: string;
@@ -19,6 +20,7 @@ interface Campaign {
   assignedUsers: number;
   createdAt: string;
   endDate: string;
+  actionPlan?: ActionPlanTask[];
 }
 
 const mockCampaigns: Campaign[] = [
@@ -32,7 +34,39 @@ const mockCampaigns: Campaign[] = [
     completedTasks: 13,
     assignedUsers: 8,
     createdAt: '2024-01-15',
-    endDate: '2024-03-30'
+    endDate: '2024-03-30',
+    actionPlan: [
+      {
+        id: '1',
+        title: 'Community Survey Design',
+        description: 'Create comprehensive survey to gather community feedback',
+        assignedEmails: ['sarah@example.com', 'mike@example.com'],
+        deadline: '2024-02-15',
+        status: 'completed',
+        notes: 'Survey completed and reviewed by stakeholders',
+        priority: 'high'
+      },
+      {
+        id: '2',
+        title: 'Door-to-Door Campaign',
+        description: 'Organize volunteers for neighborhood canvassing',
+        assignedEmails: ['volunteers@example.com'],
+        deadline: '2024-03-01',
+        status: 'in-progress',
+        notes: 'Contact local volunteer coordinator: John Doe (555-123-4567)',
+        priority: 'medium'
+      },
+      {
+        id: '3',
+        title: 'Community Event Planning',
+        description: 'Plan and execute community engagement event',
+        assignedEmails: ['events@example.com', 'sarah@example.com'],
+        deadline: '2024-03-15',
+        status: 'not-started',
+        notes: 'Venue: Community Center, Budget: $2000',
+        priority: 'high'
+      }
+    ]
   },
   {
     id: '2',
@@ -44,7 +78,8 @@ const mockCampaigns: Campaign[] = [
     completedTasks: 7,
     assignedUsers: 5,
     createdAt: '2024-02-01',
-    endDate: '2024-04-15'
+    endDate: '2024-04-15',
+    actionPlan: []
   },
 ];
 
@@ -110,6 +145,11 @@ export default function CampaignDetails() {
   }
 
   const canEdit = user?.role === 'admin';
+
+  const handleTaskUpdate = (task: ActionPlanTask) => {
+    // TODO: Implement task update functionality
+    console.log('Update task:', task);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -219,18 +259,11 @@ export default function CampaignDetails() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Action Plan Board</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            <Target className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>Action plan board and task management coming in the next phase.</p>
-            <p className="text-sm">This will include drag-and-drop task management and progress tracking.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <ActionPlanDashboard
+        tasks={campaign.actionPlan || []}
+        onTaskUpdate={handleTaskUpdate}
+        canEdit={canEdit}
+      />
     </div>
   );
 }
