@@ -20,7 +20,17 @@ import Settings from '@/pages/settings';
 import NotFound from '@/pages/NotFound';
 
 function App() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-pulse">
+          <div className="h-8 w-8 bg-primary-500 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
