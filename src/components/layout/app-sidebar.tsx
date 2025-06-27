@@ -54,7 +54,7 @@ const navigation = {
 };
 
 export function AppSidebar() {
-  const { collapsed, setCollapsed } = useSidebar();
+  const { state, setOpen, open } = useSidebar();
   const { user, logout } = useAuth();
   const location = useLocation();
 
@@ -62,6 +62,7 @@ export function AppSidebar() {
 
   const userNavigation = navigation[user.role] || [];
   const currentPath = location.pathname;
+  const isCollapsed = state === "collapsed";
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -75,10 +76,10 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible>
+    <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="offcanvas">
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center justify-between">
-          {!collapsed && (
+          {!isCollapsed && (
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
                 <Target className="w-5 h-5 text-white" />
@@ -89,17 +90,17 @@ export function AppSidebar() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => setOpen(!open)}
             className="w-8 h-8 p-0"
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </Button>
         </div>
       </SidebarHeader>
 
       <SidebarContent className="flex-1 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className={isCollapsed ? "sr-only" : ""}>
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -112,7 +113,7 @@ export function AppSidebar() {
                       className={`${getNavClass(item.url)} flex items-center px-3 py-2 rounded-md transition-colors`}
                     >
                       <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -124,7 +125,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center justify-between">
-          {!collapsed && (
+          {!isCollapsed && (
             <div className="flex items-center space-x-3">
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="bg-primary-100 text-primary-700 text-sm font-medium">
