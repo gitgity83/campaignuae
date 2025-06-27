@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -7,7 +6,7 @@ import {
   Settings,
   FileText,
   Target,
-  Bell,
+  LogOut,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -147,7 +146,7 @@ export function AppSidebar() {
             className="w-8 h-8 p-0 text-gray-500 hover:text-gray-700"
             title="Sign out"
           >
-            <Bell className="w-4 h-4" />
+            <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </SidebarFooter>

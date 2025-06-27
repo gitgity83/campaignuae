@@ -8,6 +8,13 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/layout/main-layout";
 import { LoginForm } from "@/components/auth/login-form";
 import Dashboard from "./pages/dashboard";
+import Campaigns from "./pages/campaigns";
+import Users from "./pages/users";
+import Reports from "./pages/reports";
+import Settings from "./pages/settings";
+import Tasks from "./pages/tasks";
+import Surveys from "./pages/surveys";
+import Volunteers from "./pages/volunteers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +49,62 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/campaigns"
+        element={
+          <ProtectedRoute>
+            <Campaigns />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <Users />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/volunteers"
+        element={
+          <ProtectedRoute>
+            <Volunteers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <Tasks />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/surveys"
+        element={
+          <ProtectedRoute>
+            <Surveys />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <Reports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />
