@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +8,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { LoginForm } from "@/components/auth/login-form";
 import Dashboard from "./pages/dashboard";
 import Campaigns from "./pages/campaigns";
+import CampaignDetails from "./pages/campaign-details";
 import Users from "./pages/users";
 import Reports from "./pages/reports";
 import Settings from "./pages/settings";
@@ -57,6 +57,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Campaigns />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/campaigns/:id"
+        element={
+          <ProtectedRoute>
+            <CampaignDetails />
           </ProtectedRoute>
         }
       />

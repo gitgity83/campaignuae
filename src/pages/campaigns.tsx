@@ -1,10 +1,10 @@
 
 import { useState } from "react";
-import { Plus, Search, Filter, MoreVertical } from "lucide-react";
+import { Plus, Search, MoreVertical } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -13,6 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CreateCampaignModal } from "@/components/campaigns/create-campaign-modal";
+import { CampaignFilters } from "@/components/campaigns/campaign-filters";
+import { useToast } from "@/hooks/use-toast";
 
 interface Campaign {
   id: string;
@@ -25,6 +28,12 @@ interface Campaign {
   assignedUsers: number;
   createdAt: string;
   endDate: string;
+}
+
+interface FilterState {
+  status: string;
+  dateRange: string;
+  assignedUsers: string;
 }
 
 const mockCampaigns: Campaign[] = [
@@ -78,15 +87,52 @@ const getStatusColor = (status: Campaign['status']) => {
 
 export default function Campaigns() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [campaigns] = useState<Campaign[]>(mockCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  const [filters, setFilters] = useState<FilterState>({
+    status: "",
+    dateRange: "",
+    assignedUsers: "",
+  });
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  const filteredCampaigns = campaigns.filter(campaign =>
-    campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    campaign.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCampaigns = campaigns.filter(campaign => {
+    const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         campaign.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = !filters.status || campaign.status === filters.status;
+    
+    const matchesTeamSize = !filters.assignedUsers || 
+      (filters.assignedUsers === 'small' && campaign.assignedUsers <= 5) ||
+      (filters.assignedUsers === 'medium' && campaign.assignedUsers >= 6 && campaign.assignedUsers <= 15) ||
+      (filters.assignedUsers === 'large' && campaign.assignedUsers >= 16);
+    
+    return matchesSearch && matchesStatus && matchesTeamSize;
+  });
 
   const canCreateCampaign = user?.role === 'admin';
+
+  const handleCampaignClick = (campaignId: string) => {
+    navigate(`/campaigns/${campaignId}`);
+  };
+
+  const handleEditCampaign = (campaignId: string) => {
+    // TODO: Implement edit functionality
+    toast({
+      title: "Edit Campaign",
+      description: "Edit functionality will be implemented in the next phase.",
+    });
+  };
+
+  const handleDeleteCampaign = (campaignId: string) => {
+    setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+    toast({
+      title: "Campaign Deleted",
+      description: "The campaign has been deleted successfully.",
+    });
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -98,7 +144,7 @@ export default function Campaigns() {
           </p>
         </div>
         {canCreateCampaign && (
-          <Button>
+          <Button onClick={() => setCreateModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Create Campaign
           </Button>
@@ -115,15 +161,16 @@ export default function Campaigns() {
             className="pl-10"
           />
         </div>
-        <Button variant="outline">
-          <Filter className="w-4 h-4 mr-2" />
-          Filter
-        </Button>
+        <CampaignFilters onFiltersChange={setFilters} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCampaigns.map((campaign) => (
-          <Card key={campaign.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card 
+            key={campaign.id} 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => handleCampaignClick(campaign.id)}
+          >
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -133,16 +180,36 @@ export default function Campaigns() {
                   </StatusBadge>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="sm">
                       <MoreVertical className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => {
+                      e.stopPropagation();
+                      handleCampaignClick(campaign.id);
+                    }}>
+                      View Details
+                    </DropdownMenuItem>
                     {canCreateCampaign && (
-                      <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCampaign(campaign.id);
+                        }}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCampaign(campaign.id);
+                          }}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -184,6 +251,15 @@ export default function Campaigns() {
           <p className="text-gray-500">No campaigns found matching your search.</p>
         </div>
       )}
+
+      <CreateCampaignModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onCampaignCreated={() => {
+          // Refresh campaigns list
+          console.log("Campaign created, refreshing list...");
+        }}
+      />
     </div>
   );
 }
