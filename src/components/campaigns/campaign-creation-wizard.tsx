@@ -28,7 +28,6 @@ interface CampaignFormData {
   description: string;
   endDate: string;
   status: 'draft' | 'active';
-  actionPlan: ActionPlanTask[];
 }
 
 const steps = [
@@ -49,7 +48,6 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
       description: "",
       endDate: "",
       status: "draft",
-      actionPlan: [],
     },
   });
 
@@ -119,11 +117,11 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
     }
   };
 
-  const canProceed = () => {
+  const canProceed = (): boolean => {
     const formData = form.getValues();
     switch (currentStep) {
       case 1:
-        return formData.name && formData.description && formData.endDate;
+        return !!(formData.name && formData.description && formData.endDate);
       case 2:
         return true; // Action plan is optional
       case 3:
