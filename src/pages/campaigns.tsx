@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Plus, Search, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +16,19 @@ import {
 import { CreateCampaignModal } from "@/components/campaigns/create-campaign-modal";
 import { CampaignFilters } from "@/components/campaigns/campaign-filters";
 import { useToast } from "@/hooks/use-toast";
-import { useCampaigns } from "@/contexts/campaign-context";
+
+interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  status: 'active' | 'paused' | 'completed' | 'draft';
+  progress: number;
+  totalTasks: number;
+  completedTasks: number;
+  assignedUsers: number;
+  createdAt: string;
+  endDate: string;
+}
 
 interface FilterState {
   status: string;
@@ -23,7 +36,46 @@ interface FilterState {
   assignedUsers: string;
 }
 
-const getStatusColor = (status: string) => {
+const mockCampaigns: Campaign[] = [
+  {
+    id: '1',
+    name: 'Community Outreach 2024',
+    description: 'Engaging with local communities to increase awareness',
+    status: 'active',
+    progress: 65,
+    totalTasks: 20,
+    completedTasks: 13,
+    assignedUsers: 8,
+    createdAt: '2024-01-15',
+    endDate: '2024-03-30'
+  },
+  {
+    id: '2',
+    name: 'Digital Marketing Push',
+    description: 'Social media and online advertising campaign',
+    status: 'active',
+    progress: 45,
+    totalTasks: 15,
+    completedTasks: 7,
+    assignedUsers: 5,
+    createdAt: '2024-02-01',
+    endDate: '2024-04-15'
+  },
+  {
+    id: '3',
+    name: 'Volunteer Training Program',
+    description: 'Training new volunteers for field operations',
+    status: 'completed',
+    progress: 100,
+    totalTasks: 12,
+    completedTasks: 12,
+    assignedUsers: 15,
+    createdAt: '2024-01-01',
+    endDate: '2024-02-28'
+  }
+];
+
+const getStatusColor = (status: Campaign['status']) => {
   switch (status) {
     case 'active': return 'success';
     case 'paused': return 'warning';
@@ -37,16 +89,14 @@ export default function Campaigns() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { campaigns } = useCampaigns();
   const [searchTerm, setSearchTerm] = useState("");
+  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
   const [filters, setFilters] = useState<FilterState>({
     status: "",
     dateRange: "",
     assignedUsers: "",
   });
   const [createModalOpen, setCreateModalOpen] = useState(false);
-
-  console.log('Current campaigns from context:', campaigns);
 
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,18 +127,10 @@ export default function Campaigns() {
   };
 
   const handleDeleteCampaign = (campaignId: string) => {
-    // TODO: Implement delete via context
+    setCampaigns(prev => prev.filter(c => c.id !== campaignId));
     toast({
       title: "Campaign Deleted",
       description: "The campaign has been deleted successfully.",
-    });
-  };
-
-  const handleCampaignCreated = () => {
-    console.log('Campaign created, refreshing...');
-    toast({
-      title: "Success",
-      description: "Campaign created successfully and added to your list.",
     });
   };
 
@@ -213,7 +255,10 @@ export default function Campaigns() {
       <CreateCampaignModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onCampaignCreated={handleCampaignCreated}
+        onCampaignCreated={() => {
+          // Refresh campaigns list
+          console.log("Campaign created, refreshing list...");
+        }}
       />
     </div>
   );

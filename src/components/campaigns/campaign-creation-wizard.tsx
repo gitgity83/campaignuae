@@ -1,10 +1,10 @@
+
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -28,7 +28,6 @@ import {
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { ActionPlanBuilder, ActionPlanTask } from "./action-plan-builder";
-import { useCampaigns } from "@/contexts/campaign-context";
 
 interface CampaignWizardProps {
   open: boolean;
@@ -54,7 +53,6 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { addCampaign } = useCampaigns();
 
   const form = useForm<CampaignFormData>({
     defaultValues: {
@@ -69,59 +67,41 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
   const [actionPlanTasks, setActionPlanTasks] = useState<ActionPlanTask[]>([]);
 
   const nextStep = () => {
-    console.log('Moving to next step from:', currentStep);
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     }
   };
 
   const prevStep = () => {
-    console.log('Moving to previous step from:', currentStep);
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
 
   const onSubmit = async (data: CampaignFormData) => {
-    console.log('Submitting campaign creation form:', data);
     setIsLoading(true);
-    
     try {
-      const newCampaign = {
-        id: Date.now().toString(),
-        name: data.name,
-        description: data.description,
-        status: data.status,
-        progress: 0,
-        totalTasks: actionPlanTasks.length,
-        completedTasks: actionPlanTasks.filter(t => t.status === 'completed').length,
-        assignedUsers: new Set(actionPlanTasks.flatMap(t => t.assignedEmails)).size,
-        createdAt: new Date().toISOString().split('T')[0],
-        endDate: data.endDate,
+      const campaignData = {
+        ...data,
         actionPlan: actionPlanTasks
       };
 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      console.log("Creating campaign with action plan:", newCampaign);
-      
-      // Add to campaign context
-      addCampaign(newCampaign);
+      console.log("Creating campaign with action plan:", campaignData);
       
       toast({
         title: "Campaign Created Successfully!",
         description: `${data.name} has been created with ${actionPlanTasks.length} tasks.`,
       });
       
-      // Reset form and close
       form.reset();
       setActionPlanTasks([]);
       setCurrentStep(1);
       onOpenChange(false);
       onCampaignCreated?.();
     } catch (error) {
-      console.error('Error creating campaign:', error);
       toast({
         title: "Error",
         description: "Failed to create campaign. Please try again.",
@@ -147,16 +127,10 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
   };
 
   const handleClose = () => {
-    console.log('Closing campaign creation wizard');
     form.reset();
     setActionPlanTasks([]);
     setCurrentStep(1);
     onOpenChange(false);
-  };
-
-  const handleTasksChange = (tasks: ActionPlanTask[]) => {
-    console.log('Action plan tasks updated:', tasks);
-    setActionPlanTasks(tasks);
   };
 
   return (
@@ -164,9 +138,6 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Create New Campaign</DialogTitle>
-          <DialogDescription>
-            Create a new campaign with detailed action plans and task assignments.
-          </DialogDescription>
           
           {/* Progress Steps */}
           <div className="flex items-center justify-between mt-6 mb-8">
@@ -286,7 +257,7 @@ export function CampaignCreationWizard({ open, onOpenChange, onCampaignCreated }
               <div className="space-y-4">
                 <ActionPlanBuilder
                   tasks={actionPlanTasks}
-                  onTasksChange={handleTasksChange}
+                  onTasksChange={setActionPlanTasks}
                 />
               </div>
             )}

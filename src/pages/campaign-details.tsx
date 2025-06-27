@@ -8,9 +8,82 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
 import { ActionPlanDashboard } from "@/components/campaigns/action-plan-dashboard";
 import { ActionPlanTask } from "@/components/campaigns/action-plan-builder";
-import { useCampaigns } from "@/contexts/campaign-context";
 
-const getStatusColor = (status: string) => {
+interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  status: 'active' | 'paused' | 'completed' | 'draft';
+  progress: number;
+  totalTasks: number;
+  completedTasks: number;
+  assignedUsers: number;
+  createdAt: string;
+  endDate: string;
+  actionPlan?: ActionPlanTask[];
+}
+
+const mockCampaigns: Campaign[] = [
+  {
+    id: '1',
+    name: 'Community Outreach 2024',
+    description: 'Engaging with local communities to increase awareness about our initiatives and gather feedback on community needs.',
+    status: 'active',
+    progress: 65,
+    totalTasks: 20,
+    completedTasks: 13,
+    assignedUsers: 8,
+    createdAt: '2024-01-15',
+    endDate: '2024-03-30',
+    actionPlan: [
+      {
+        id: '1',
+        title: 'Community Survey Design',
+        description: 'Create comprehensive survey to gather community feedback',
+        assignedEmails: ['sarah@example.com', 'mike@example.com'],
+        deadline: '2024-02-15',
+        status: 'completed',
+        notes: 'Survey completed and reviewed by stakeholders',
+        priority: 'high'
+      },
+      {
+        id: '2',
+        title: 'Door-to-Door Campaign',
+        description: 'Organize volunteers for neighborhood canvassing',
+        assignedEmails: ['volunteers@example.com'],
+        deadline: '2024-03-01',
+        status: 'in-progress',
+        notes: 'Contact local volunteer coordinator: John Doe (555-123-4567)',
+        priority: 'medium'
+      },
+      {
+        id: '3',
+        title: 'Community Event Planning',
+        description: 'Plan and execute community engagement event',
+        assignedEmails: ['events@example.com', 'sarah@example.com'],
+        deadline: '2024-03-15',
+        status: 'not-started',
+        notes: 'Venue: Community Center, Budget: $2000',
+        priority: 'high'
+      }
+    ]
+  },
+  {
+    id: '2',
+    name: 'Digital Marketing Push',
+    description: 'Social media and online advertising campaign to reach broader audience',
+    status: 'active',
+    progress: 45,
+    totalTasks: 15,
+    completedTasks: 7,
+    assignedUsers: 5,
+    createdAt: '2024-02-01',
+    endDate: '2024-04-15',
+    actionPlan: []
+  },
+];
+
+const getStatusColor = (status: Campaign['status']) => {
   switch (status) {
     case 'active': return 'success';
     case 'paused': return 'warning';
@@ -24,18 +97,20 @@ export default function CampaignDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getCampaign, updateCampaign } = useCampaigns();
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const campaign = getCampaign(id || '');
-
   useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => {
+    // Simulate API call
+    const fetchCampaign = async () => {
+      setLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const foundCampaign = mockCampaigns.find(c => c.id === id);
+      setCampaign(foundCampaign || null);
       setLoading(false);
-    }, 500);
+    };
 
-    return () => clearTimeout(timer);
+    fetchCampaign();
   }, [id]);
 
   if (loading) {
@@ -72,22 +147,8 @@ export default function CampaignDetails() {
   const canEdit = user?.role === 'admin';
 
   const handleTaskUpdate = (task: ActionPlanTask) => {
+    // TODO: Implement task update functionality
     console.log('Update task:', task);
-    if (campaign.actionPlan) {
-      const updatedActionPlan = campaign.actionPlan.map(t => 
-        t.id === task.id ? task : t
-      );
-      const completedTasks = updatedActionPlan.filter(t => t.status === 'completed').length;
-      const progress = updatedActionPlan.length > 0 
-        ? Math.round((completedTasks / updatedActionPlan.length) * 100) 
-        : 0;
-
-      updateCampaign(campaign.id, {
-        actionPlan: updatedActionPlan,
-        completedTasks,
-        progress
-      });
-    }
   };
 
   return (
