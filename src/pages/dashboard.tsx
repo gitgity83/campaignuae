@@ -2,7 +2,6 @@
 import { MetricCard } from "@/components/ui/metric-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   Users, 
@@ -71,7 +70,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6 space-y-8 animate-fade-in">
+    <div className="p-6 space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
           Welcome back, {user.firstName}
@@ -114,20 +113,11 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Platform Features Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-emerald-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-emerald-100">
-          <h2 className="text-xl font-semibold text-gray-900">Platform Features</h2>
-          <p className="text-gray-600 mt-1">Powerful tools to manage your awareness campaigns</p>
-        </div>
-        <FeaturesSectionWithHoverEffects />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Campaign Overview */}
-        <Card className="border-emerald-100">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-700">
+            <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5" />
               Active Campaigns
             </CardTitle>
@@ -138,15 +128,15 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {campaigns.map((campaign) => (
-                <div key={campaign.id} className="p-4 border border-emerald-100 rounded-lg">
+                <div key={campaign.id} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium">{campaign.name}</h4>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       campaign.status === 'active' 
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-success-100 text-success-700'
                         : campaign.status === 'completed'
-                        ? 'bg-violet-100 text-violet-700'
-                        : 'bg-amber-100 text-amber-700'
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'bg-warning-100 text-warning-700'
                     }`}>
                       {campaign.status}
                     </span>
@@ -175,9 +165,9 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Activity */}
-        <Card className="border-emerald-100">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-700">
+            <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
               Recent Activity
             </CardTitle>
@@ -188,8 +178,8 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {dashboardData.recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                  <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                  <CheckCircle className="w-5 h-5 text-success-500 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-900">{activity.action}</p>
                     <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
@@ -203,9 +193,9 @@ export default function Dashboard() {
 
       {/* Role-specific content */}
       {user.role === 'admin' && (
-        <Card className="border-emerald-100">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-700">
+            <CardTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />
               Admin Insights
             </CardTitle>
@@ -215,16 +205,16 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 border border-emerald-100 rounded-lg bg-emerald-50">
-                <div className="text-2xl font-bold text-emerald-600">98.5%</div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-primary-600">98.5%</div>
                 <div className="text-sm text-gray-600">System Uptime</div>
               </div>
-              <div className="text-center p-4 border border-violet-100 rounded-lg bg-violet-50">
-                <div className="text-2xl font-bold text-violet-600">2,847</div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-success-600">2,847</div>
                 <div className="text-sm text-gray-600">Survey Responses</div>
               </div>
-              <div className="text-center p-4 border border-amber-100 rounded-lg bg-amber-50">
-                <div className="text-2xl font-bold text-amber-600">3</div>
+              <div className="text-center p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-warning-600">3</div>
                 <div className="text-sm text-gray-600">Pending Reviews</div>
               </div>
             </div>

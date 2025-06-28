@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { Target, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { validatePasswordStrength } from '@/utils/security';
-
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,10 +48,10 @@ export function LoginForm() {
     role: 'Volunteer',
     password: 'SecurePass123!'
   }];
-  return <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-violet-100 flex items-center justify-center p-4">
+  return <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 bg-primary-500 rounded-2xl flex items-center justify-center mb-4">
             <Target className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">CampaignUAE</h1>
@@ -84,18 +82,18 @@ export function LoginForm() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-11 bg-emerald-500 hover:bg-emerald-600" disabled={isLoading}>
+              <Button type="submit" className="w-full h-11 bg-primary-500 hover:bg-primary-600" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
 
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <div className="flex items-center">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 mr-2" />
-                  <p className="text-sm text-amber-800 font-medium">Security Update</p>
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2" />
+                  <p className="text-sm text-yellow-800 font-medium">Security Update</p>
                 </div>
-                <p className="text-sm text-amber-700 mt-1">
+                <p className="text-sm text-yellow-700 mt-1">
                   Password requirements: 8+ chars, uppercase, lowercase, number, and special character
                 </p>
               </div>
@@ -105,7 +103,7 @@ export function LoginForm() {
                 {demoAccounts.map(account => <button key={account.email} onClick={() => {
                 setEmail(account.email);
                 setPassword(account.password);
-              }} className="w-full text-left p-2 rounded-md bg-gray-50 hover:bg-emerald-50 transition-colors text-sm border border-emerald-200">
+              }} className="w-full text-left p-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-sm">
                     <div className="font-medium">{account.role}</div>
                     <div className="text-gray-600">{account.email}</div>
                     <div className="text-xs text-gray-500">Password: {account.password}</div>
