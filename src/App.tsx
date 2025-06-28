@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +15,7 @@ import Reports from "./pages/reports";
 import Settings from "./pages/settings";
 import Tasks from "./pages/tasks";
 import Surveys from "./pages/surveys";
+import SurveyTake from "./pages/survey-take";
 import Volunteers from "./pages/volunteers";
 import NotFound from "./pages/NotFound";
 
@@ -97,6 +99,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Surveys />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/surveys/:id/take"
+        element={
+          <ProtectedRoute>
+            <SurveyTake />
           </ProtectedRoute>
         }
       />

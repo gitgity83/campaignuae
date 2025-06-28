@@ -1,12 +1,16 @@
 
 import { useState } from "react";
-import { Plus, Search, BarChart3, Users, Calendar } from "lucide-react";
+import { Plus, Search, BarChart3, Users, Calendar, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { SurveyBuilder } from "@/components/surveys/survey-builder";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 import {
   Select,
   SelectContent,
@@ -38,7 +42,7 @@ const mockSurveys: Survey[] = [
     status: 'active',
     responses: 145,
     targetResponses: 500,
-    questions: 12,
+    questions: 5,
     createdAt: '2024-06-15',
     endDate: '2024-07-30',
     createdBy: 'John Admin'
@@ -51,7 +55,7 @@ const mockSurveys: Survey[] = [
     status: 'active',
     responses: 89,
     targetResponses: 200,
-    questions: 8,
+    questions: 4,
     createdAt: '2024-06-20',
     endDate: '2024-07-15',
     createdBy: 'Sarah Supervisor'
@@ -96,9 +100,11 @@ const getStatusColor = (status: Survey['status']) => {
 
 export default function Surveys() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [surveys] = useState<Survey[]>(mockSurveys);
+  const [showSurveyBuilder, setShowSurveyBuilder] = useState(false);
 
   const filteredSurveys = surveys.filter(survey => {
     const matchesSearch = survey.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,6 +118,45 @@ export default function Surveys() {
 
   const canCreateSurvey = user?.role === 'admin' || user?.role === 'supervisor';
 
+  const handleTakeSurvey = (surveyId: string) => {
+    navigate(`/surveys/${surveyId}/take`);
+  };
+
+  const handleCreateSurvey = () => {
+    setShowSurveyBuilder(true);
+  };
+
+  const handleSaveSurvey = (surveyData: any) => {
+    console.log('Saving survey:', surveyData);
+    
+    // Simulate API call
+    setTimeout(() => {
+      toast({
+        title: "Survey Created",
+        description: "Your survey has been successfully created and is now active."
+      });
+      setShowSurveyBuilder(false);
+    }, 1000);
+  };
+
+  const handleViewResults = (surveyId: string) => {
+    // Navigate to results page (to be implemented)
+    console.log('View results for survey:', surveyId);
+    toast({
+      title: "Feature Coming Soon",
+      description: "Survey results viewing will be available soon."
+    });
+  };
+
+  const handleEditSurvey = (surveyId: string) => {
+    // Navigate to edit page (to be implemented)
+    console.log('Edit survey:', surveyId);
+    toast({
+      title: "Feature Coming Soon",
+      description: "Survey editing will be available soon."
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -119,13 +164,13 @@ export default function Surveys() {
           <h1 className="text-3xl font-bold text-gray-900">Surveys</h1>
           <p className="text-gray-600 mt-1">
             {user?.role === 'volunteer' 
-              ? 'View and respond to surveys' 
+              ? 'Take surveys and collect responses from the public' 
               : 'Create and manage campaign surveys'
             }
           </p>
         </div>
         {canCreateSurvey && (
-          <Button>
+          <Button onClick={handleCreateSurvey}>
             <Plus className="w-4 h-4 mr-2" />
             Create Survey
           </Button>
@@ -221,7 +266,7 @@ export default function Surveys() {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
                         style={{ width: `${Math.min((survey.responses / survey.targetResponses) * 100, 100)}%` }}
                       />
                     </div>
@@ -251,15 +296,31 @@ export default function Surveys() {
 
                 <div className="pt-2">
                   {user?.role === 'volunteer' ? (
-                    <Button size="sm" className="w-full" disabled={survey.status !== 'active'}>
+                    <Button 
+                      size="sm" 
+                      className="w-full" 
+                      disabled={survey.status !== 'active'}
+                      onClick={() => handleTakeSurvey(survey.id)}
+                    >
                       {survey.status === 'active' ? 'Take Survey' : 'Not Available'}
                     </Button>
                   ) : (
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1">
-                        View Results
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => handleViewResults(survey.id)}
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Results
                       </Button>
-                      <Button size="sm" className="flex-1">
+                      <Button 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEditSurvey(survey.id)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
                     </div>
@@ -276,6 +337,19 @@ export default function Surveys() {
           <p className="text-gray-500">No surveys found matching your criteria.</p>
         </div>
       )}
+
+      {/* Survey Builder Dialog */}
+      <Dialog open={showSurveyBuilder} onOpenChange={setShowSurveyBuilder}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Survey</DialogTitle>
+          </DialogHeader>
+          <SurveyBuilder
+            onSave={handleSaveSurvey}
+            onCancel={() => setShowSurveyBuilder(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
