@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import Surveys from "./pages/surveys";
 import SurveyTake from "./pages/survey-take";
 import Volunteers from "./pages/volunteers";
 import NotFound from "./pages/NotFound";
+import Register from "./pages/register";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +45,10 @@ function AppRoutes() {
       <Route 
         path="/login" 
         element={isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />} 
+      />
+      <Route 
+        path="/register/:token" 
+        element={<Register />} 
       />
       <Route
         path="/"

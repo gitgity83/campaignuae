@@ -1,12 +1,13 @@
-
-import { useState } from "react";
-import { Plus, Search, Filter, MoreVertical, Mail, Phone } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, Search, Filter, MoreVertical, Mail, Phone, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { CreateUserForm } from "@/components/users/create-user-form";
+import { User } from "@/types/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,77 +22,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 
-interface UserData {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: 'admin' | 'supervisor' | 'volunteer';
-  status: 'active' | 'inactive' | 'pending';
-  activeCampaigns: number;
-  tasksCompleted: number;
-  joinedDate: string;
-  lastActive: string;
-}
-
-const mockUsers: UserData[] = [
-  {
-    id: '1',
-    firstName: 'John',
-    lastName: 'Admin',
-    email: 'admin@campaign.com',
-    phone: '+971544446651',
-    role: 'admin',
-    status: 'active',
-    activeCampaigns: 5,
-    tasksCompleted: 45,
-    joinedDate: '2024-01-01',
-    lastActive: '2024-06-27'
-  },
-  {
-    id: '2',
-    firstName: 'Sarah',
-    lastName: 'Supervisor',
-    email: 'supervisor@campaign.com',
-    phone: '+971544446652',
-    role: 'supervisor',
-    status: 'active',
-    activeCampaigns: 3,
-    tasksCompleted: 28,
-    joinedDate: '2024-01-15',
-    lastActive: '2024-06-26'
-  },
-  {
-    id: '3',
-    firstName: 'Mike',
-    lastName: 'Volunteer',
-    email: 'volunteer@campaign.com',
-    phone: '+971544446653',
-    role: 'volunteer',
-    status: 'active',
-    activeCampaigns: 2,
-    tasksCompleted: 15,
-    joinedDate: '2024-02-01',
-    lastActive: '2024-06-25'
-  },
-  {
-    id: '4',
-    firstName: 'Lisa',
-    lastName: 'Johnson',
-    email: 'lisa.johnson@campaign.com',
-    phone: '+971544446654',
-    role: 'volunteer',
-    status: 'pending',
-    activeCampaigns: 0,
-    tasksCompleted: 0,
-    joinedDate: '2024-06-20',
-    lastActive: '2024-06-20'
-  }
-];
-
-const getRoleBadgeColor = (role: UserData['role']) => {
+const getRoleBadgeColor = (role: User['role']) => {
   switch (role) {
     case 'admin': return 'bg-red-100 text-red-800';
     case 'supervisor': return 'bg-blue-100 text-blue-800';
@@ -100,19 +39,26 @@ const getRoleBadgeColor = (role: UserData['role']) => {
   }
 };
 
-const getStatusBadgeColor = (status: UserData['status']) => {
+const getStatusBadgeColor = (status: User['status']) => {
   switch (status) {
     case 'active': return 'bg-green-100 text-green-800';
     case 'inactive': return 'bg-gray-100 text-gray-800';
-    case 'pending': return 'bg-yellow-100 text-yellow-800';
+    case 'pending_approval': return 'bg-yellow-100 text-yellow-800';
     default: return 'bg-gray-100 text-gray-800';
   }
 };
 
 export default function Users() {
-  const { user } = useAuth();
+  const { user, getAllUsers, getPendingUsers, approveUser, rejectUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [users] = useState<UserData[]>(mockUsers);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh users when component mounts or when refreshKey changes
+  React.useEffect(() => {
+    setUsers(getAllUsers());
+  }, [getAllUsers, refreshKey]);
 
   const filteredUsers = users.filter(userData =>
     userData.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,9 +66,50 @@ export default function Users() {
     userData.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const pendingUsers = getPendingUsers();
   const canManageUsers = user?.role === 'admin';
+  const canCreateUsers = user?.role === 'admin' || user?.role === 'supervisor';
 
-  if (!canManageUsers) {
+  const handleApprove = async (userId: string) => {
+    try {
+      await approveUser(userId);
+      setRefreshKey(prev => prev + 1);
+      toast({
+        title: "User approved",
+        description: "The user has been approved and can now access the system.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error approving user",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (userId: string) => {
+    try {
+      await rejectUser(userId);
+      setRefreshKey(prev => prev + 1);
+      toast({
+        title: "User rejected",
+        description: "The user has been removed from the system.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error rejecting user",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateSuccess = () => {
+    setShowCreateForm(false);
+    setRefreshKey(prev => prev + 1);
+  };
+
+  if (!canManageUsers && !canCreateUsers) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
@@ -140,11 +127,61 @@ export default function Users() {
           <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600 mt-1">Manage team members and their permissions</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add User
-        </Button>
+        {canCreateUsers && (
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add User
+          </Button>
+        )}
       </div>
+
+      {/* Pending Approvals for Admins */}
+      {canManageUsers && pendingUsers.length > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardHeader>
+            <CardTitle className="flex items-center text-yellow-800">
+              <Clock className="w-5 h-5 mr-2" />
+              Pending Approvals ({pendingUsers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pendingUsers.map((pendingUser) => (
+              <div key={pendingUser.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-yellow-100 text-yellow-700 text-sm">
+                      {pendingUser.firstName[0]}{pendingUser.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">{pendingUser.firstName} {pendingUser.lastName}</div>
+                    <div className="text-sm text-gray-500">{pendingUser.email} • {pendingUser.role}</div>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleApprove(pendingUser.id)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Approve
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleReject(pendingUser.id)}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-4 items-center">
         <div className="relative flex-1 max-w-md">
@@ -174,7 +211,7 @@ export default function Users() {
                 <TableHead>Contact</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Performance</TableHead>
+                <TableHead>Registration</TableHead>
                 <TableHead>Last Active</TableHead>
                 <TableHead className="w-[70px]"></TableHead>
               </TableRow>
@@ -201,10 +238,6 @@ export default function Users() {
                         <Mail className="w-3 h-3 mr-1 text-gray-400" />
                         {userData.email}
                       </div>
-                      <div className="flex items-center text-sm">
-                        <Phone className="w-3 h-3 mr-1 text-gray-400" />
-                        {userData.phone}
-                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -214,17 +247,16 @@ export default function Users() {
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusBadgeColor(userData.status)}>
-                      {userData.status}
+                      {userData.status === 'pending_approval' ? 'pending' : userData.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div>Campaigns: {userData.activeCampaigns}</div>
-                      <div>Tasks: {userData.tasksCompleted}</div>
+                  <TableCell className="text-sm">
+                    <div className={userData.passwordSet ? "text-green-600" : "text-yellow-600"}>
+                      {userData.passwordSet ? "Complete" : "Pending"}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {new Date(userData.lastActive).toLocaleDateString()}
+                    {userData.lastLogin ? new Date(userData.lastLogin).toLocaleDateString() : 'Never'}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -235,9 +267,26 @@ export default function Users() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>View Profile</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Reset Password</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                        {canManageUsers && (
+                          <>
+                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem>Reset Password</DropdownMenuItem>
+                            {userData.status === 'pending_approval' && (
+                              <>
+                                <DropdownMenuItem onClick={() => handleApprove(userData.id)}>
+                                  Approve
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleReject(userData.id)}
+                                  className="text-red-600"
+                                >
+                                  Reject
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -253,6 +302,19 @@ export default function Users() {
           <p className="text-gray-500">No users found matching your search.</p>
         </div>
       )}
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+          </DialogHeader>
+          <CreateUserForm
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
