@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -35,6 +36,7 @@ const navigation = {
   admin: [
     { title: "Dashboard", url: "/", icon: Home },
     { title: "Campaigns", url: "/campaigns", icon: Target },
+    { title: "Surveys", url: "/surveys", icon: BarChart3 },
     { title: "User Management", url: "/users", icon: Users },
     { title: "Reports", url: "/reports", icon: FileText },
     { title: "Settings", url: "/settings", icon: Settings },
@@ -42,6 +44,7 @@ const navigation = {
   supervisor: [
     { title: "Dashboard", url: "/", icon: Home },
     { title: "My Campaigns", url: "/campaigns", icon: Target },
+    { title: "Surveys", url: "/surveys", icon: BarChart3 },
     { title: "Volunteers", url: "/volunteers", icon: UserCheck },
     { title: "Reports", url: "/reports", icon: FileText },
   ],

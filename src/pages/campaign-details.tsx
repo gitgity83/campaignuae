@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { ActionPlanDashboard } from "@/components/campaigns/action-plan-dashboard";
 import { ActionPlanTask } from "@/components/campaigns/action-plan-builder";
+import { CampaignSurveys } from "@/components/surveys/campaign-surveys";
 
 interface Campaign {
   id: string;
@@ -145,6 +147,8 @@ export default function CampaignDetails() {
   }
 
   const canEdit = user?.role === 'admin';
+  const canCreateSurvey = user?.role === 'admin' || user?.role === 'supervisor';
+  const canManageSurveys = user?.role === 'admin' || user?.role === 'supervisor';
 
   const handleTaskUpdate = (task: ActionPlanTask) => {
     // TODO: Implement task update functionality
@@ -184,86 +188,61 @@ export default function CampaignDetails() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Progress</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{campaign.progress}%</div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div 
-                className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${campaign.progress}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="action-plan">Action Plan</TabsTrigger>
+          <TabsTrigger value="surveys">Surveys</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tasks</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {campaign.completedTasks}/{campaign.totalTasks}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {campaign.totalTasks - campaign.completedTasks} remaining
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{campaign.assignedUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Active contributors
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Campaign Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-            <p className="text-gray-600">{campaign.description}</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium text-gray-900 mb-1">End Date</h4>
-              <div className="flex items-center text-gray-600">
-                <Calendar className="w-4 h-4 mr-2" />
-                {new Date(campaign.endDate).toLocaleDateString()}
+        <TabsContent value="overview" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Description</h4>
+                <p className="text-gray-600">{campaign.description}</p>
               </div>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-gray-900 mb-1">Status</h4>
-              <StatusBadge status={getStatusColor(campaign.status)}>
-                {campaign.status}
-              </StatusBadge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-1">End Date</h4>
+                  <div className="flex items-center text-gray-600">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    {new Date(campaign.endDate).toLocaleDateString()}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-1">Status</h4>
+                  <StatusBadge status={getStatusColor(campaign.status)}>
+                    {campaign.status}
+                  </StatusBadge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <ActionPlanDashboard
-        tasks={campaign.actionPlan || []}
-        onTaskUpdate={handleTaskUpdate}
-        canEdit={canEdit}
-      />
+        <TabsContent value="action-plan">
+          <ActionPlanDashboard
+            tasks={campaign.actionPlan || []}
+            onTaskUpdate={handleTaskUpdate}
+            canEdit={canEdit}
+          />
+        </TabsContent>
+
+        <TabsContent value="surveys">
+          <CampaignSurveys
+            campaignId={campaign.id}
+            campaignName={campaign.name}
+            canCreateSurvey={canCreateSurvey}
+            canManageSurveys={canManageSurveys}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
