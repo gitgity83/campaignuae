@@ -86,14 +86,14 @@ export function AppSidebar() {
               <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
                 <Target className="w-5 h-5 text-white" />
               </div>
-              <span className="font-semibold text-lg">CampaignHub</span>
+              <span className="font-semibold text-lg">CampaignUAE</span>
             </div>
           )}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setOpen(!open)}
-            className="w-8 h-8 p-0"
+            className="w-8 h-8 p-0 shrink-0"
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </Button>
@@ -115,7 +115,7 @@ export function AppSidebar() {
                       className={`${getNavClass(item.url)} flex items-center px-3 py-2 rounded-md transition-colors`}
                     >
                       <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      {!isCollapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -128,8 +128,8 @@ export function AppSidebar() {
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <div className="flex items-center space-x-3">
-              <Avatar className="w-8 h-8">
+            <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <Avatar className="w-8 h-8 flex-shrink-0">
                 <AvatarFallback className="bg-primary-100 text-primary-700 text-sm font-medium">
                   {user.firstName[0]}{user.lastName[0]}
                 </AvatarFallback>
@@ -146,7 +146,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={logout}
-            className="w-8 h-8 p-0 text-gray-500 hover:text-gray-700"
+            className="w-8 h-8 p-0 text-gray-500 hover:text-gray-700 flex-shrink-0"
             title="Sign out"
           >
             <LogOut className="w-4 h-4" />
