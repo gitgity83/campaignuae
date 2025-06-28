@@ -1,15 +1,12 @@
 
 import { useState } from "react";
-import { Plus, Trash2, GripVertical, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/components/ui/use-toast";
+import { SurveyBuilderDetails } from "./survey-builder-details";
+import { QuestionEditor } from "./question-editor";
 
 interface SurveyQuestion {
   id: string;
@@ -113,41 +110,14 @@ export function SurveyBuilder({ onSave, onCancel, initialData }: SurveyBuilderPr
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Survey Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="title">Survey Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter survey title"
-            />
-          </div>
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the purpose of this survey"
-            />
-          </div>
-          <div>
-            <Label htmlFor="target">Target Responses</Label>
-            <Input
-              id="target"
-              type="number"
-              value={targetResponses}
-              onChange={(e) => setTargetResponses(Number(e.target.value))}
-              placeholder="100"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <SurveyBuilderDetails
+        title={title}
+        description={description}
+        targetResponses={targetResponses}
+        onTitleChange={setTitle}
+        onDescriptionChange={setDescription}
+        onTargetResponsesChange={setTargetResponses}
+      />
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
@@ -167,97 +137,16 @@ export function SurveyBuilder({ onSave, onCancel, initialData }: SurveyBuilderPr
         </div>
 
         {questions.map((question, index) => (
-          <Card key={question.id}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-4 h-4 text-gray-400" />
-                  <span className="font-medium">Question {index + 1}</span>
-                  <span className="text-sm text-gray-500 capitalize">({question.type.replace('_', ' ')})</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeQuestion(question.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Question Text</Label>
-                <Input
-                  value={question.question}
-                  onChange={(e) => updateQuestion(question.id, { question: e.target.value })}
-                  placeholder="Enter your question"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={`required-${question.id}`}
-                  checked={question.required}
-                  onCheckedChange={(checked) => updateQuestion(question.id, { required: checked as boolean })}
-                />
-                <Label htmlFor={`required-${question.id}`}>Required</Label>
-              </div>
-
-              {question.type === 'multiple_choice' && (
-                <div>
-                  <Label>Options</Label>
-                  <div className="space-y-2">
-                    {question.options?.map((option, optionIndex) => (
-                      <div key={optionIndex} className="flex items-center gap-2">
-                        <Input
-                          value={option}
-                          onChange={(e) => updateOption(question.id, optionIndex, e.target.value)}
-                          placeholder={`Option ${optionIndex + 1}`}
-                        />
-                        {question.options && question.options.length > 2 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeOption(question.id, optionIndex)}
-                            className="text-red-500"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addOption(question.id)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Option
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {question.type === 'rating' && (
-                <div>
-                  <Label>Rating Scale (1 to)</Label>
-                  <Select
-                    value={question.ratingScale?.toString()}
-                    onValueChange={(value) => updateQuestion(question.id, { ratingScale: Number(value) })}
-                  >
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="10">10</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <QuestionEditor
+            key={question.id}
+            question={question}
+            index={index}
+            onUpdate={(updates) => updateQuestion(question.id, updates)}
+            onRemove={() => removeQuestion(question.id)}
+            onAddOption={() => addOption(question.id)}
+            onUpdateOption={(optionIndex, value) => updateOption(question.id, optionIndex, value)}
+            onRemoveOption={(optionIndex) => removeOption(question.id, optionIndex)}
+          />
         ))}
 
         {questions.length === 0 && (

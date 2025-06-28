@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -114,7 +113,6 @@ export default function SurveyTake() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
     setTimeout(() => {
       const foundSurvey = mockSurveys.find(s => s.id === id);
       setSurvey(foundSurvey || null);
@@ -125,7 +123,6 @@ export default function SurveyTake() {
   const handleSubmit = (responses: any[], context: any) => {
     console.log('Survey submitted:', { surveyId: id, responses, context });
     
-    // Simulate API call
     setTimeout(() => {
       toast({
         title: "Survey Submitted Successfully",
