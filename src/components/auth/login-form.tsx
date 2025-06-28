@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
-import { Target, Eye, EyeOff } from 'lucide-react';
+import { Target, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { validatePasswordStrength } from '@/utils/security';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -26,9 +27,10 @@ export function LoginForm() {
         description: "You have successfully logged in.",
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Login failed";
       toast({
         title: "Login failed",
-        description: "Please check your credentials and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -37,9 +39,9 @@ export function LoginForm() {
   };
 
   const demoAccounts = [
-    { email: 'admin@campaign.com', role: 'Admin' },
-    { email: 'supervisor@campaign.com', role: 'Supervisor' },
-    { email: 'volunteer@campaign.com', role: 'Volunteer' }
+    { email: 'admin@campaign.com', role: 'Admin', password: 'SecurePass123!' },
+    { email: 'supervisor@campaign.com', role: 'Supervisor', password: 'SecurePass123!' },
+    { email: 'volunteer@campaign.com', role: 'Volunteer', password: 'SecurePass123!' }
   ];
 
   return (
@@ -107,19 +109,30 @@ export function LoginForm() {
             </form>
 
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-sm text-gray-600 mb-3">Demo accounts (password: password123):</p>
+              <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-center">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2" />
+                  <p className="text-sm text-yellow-800 font-medium">Security Update</p>
+                </div>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Password requirements: 8+ chars, uppercase, lowercase, number, and special character
+                </p>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-3">Demo accounts:</p>
               <div className="space-y-2">
                 {demoAccounts.map((account) => (
                   <button
                     key={account.email}
                     onClick={() => {
                       setEmail(account.email);
-                      setPassword('password123');
+                      setPassword(account.password);
                     }}
                     className="w-full text-left p-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors text-sm"
                   >
                     <div className="font-medium">{account.role}</div>
                     <div className="text-gray-600">{account.email}</div>
+                    <div className="text-xs text-gray-500">Password: {account.password}</div>
                   </button>
                 ))}
               </div>

@@ -1,6 +1,9 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthState, UserRole, CreateUserData, RegistrationData } from '@/types/auth';
+import { SecureUser, LoginAttempt, DEFAULT_SECURITY_CONFIG } from '@/types/secure-auth';
+import { hashPassword, verifyPassword, generateSecureToken, checkRateLimit, generateSessionToken, isTokenExpired } from '@/utils/security';
+import { validateInput, loginSchema, createUserSchema, registrationSchema } from '@/utils/validation';
+import { sanitizeInput } from '@/utils/security';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -18,57 +21,75 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Enhanced mock users with new fields
-const mockUsers: User[] = [
-  {
-    id: '1',
-    email: 'admin@campaign.com',
-    role: 'admin',
-    firstName: 'John',
-    lastName: 'Admin',
-    status: 'active',
-    createdAt: '2024-01-01',
-    lastLogin: '2024-06-27',
-    passwordSet: true
-  },
-  {
-    id: '2',
-    email: 'supervisor@campaign.com',
-    role: 'supervisor',
-    firstName: 'Sarah',
-    lastName: 'Supervisor',
-    status: 'active',
-    createdAt: '2024-01-15',
-    lastLogin: '2024-06-26',
-    createdBy: '1',
-    passwordSet: true
-  },
-  {
-    id: '3',
-    email: 'volunteer@campaign.com',
-    role: 'volunteer',
-    firstName: 'Mike',
-    lastName: 'Volunteer',
-    status: 'active',
-    createdAt: '2024-02-01',
-    lastLogin: '2024-06-25',
-    createdBy: '2',
-    passwordSet: true
-  },
-  {
-    id: '4',
-    email: 'pending@campaign.com',
-    role: 'volunteer',
-    firstName: 'Lisa',
-    lastName: 'Johnson',
-    status: 'pending_approval',
-    createdAt: '2024-06-20',
-    lastLogin: '',
-    createdBy: '2',
-    registrationToken: 'token-pending-volunteer',
-    passwordSet: false
-  }
-];
+// Create secure mock users with hashed passwords
+const createSecureMockUsers = (): SecureUser[] => {
+  const defaultPassword = 'SecurePass123!';
+  const { hash, salt } = hashPassword(defaultPassword);
+  
+  return [
+    {
+      id: '1',
+      email: 'admin@campaign.com',
+      role: 'admin',
+      firstName: 'John',
+      lastName: 'Admin',
+      status: 'active',
+      createdAt: '2024-01-01',
+      lastLogin: '2024-06-27',
+      passwordSet: true,
+      passwordHash: hash,
+      passwordSalt: salt,
+      loginAttempts: 0
+    },
+    {
+      id: '2',
+      email: 'supervisor@campaign.com',
+      role: 'supervisor',
+      firstName: 'Sarah',
+      lastName: 'Supervisor',
+      status: 'active',
+      createdAt: '2024-01-15',
+      lastLogin: '2024-06-26',
+      createdBy: '1',
+      passwordSet: true,
+      passwordHash: hash,
+      passwordSalt: salt,
+      loginAttempts: 0
+    },
+    {
+      id: '3',
+      email: 'volunteer@campaign.com',
+      role: 'volunteer',
+      firstName: 'Mike',
+      lastName: 'Volunteer',
+      status: 'active',
+      createdAt: '2024-02-01',
+      lastLogin: '2024-06-25',
+      createdBy: '2',
+      passwordSet: true,
+      passwordHash: hash,
+      passwordSalt: salt,
+      loginAttempts: 0
+    },
+    {
+      id: '4',
+      email: 'pending@campaign.com',
+      role: 'volunteer',
+      firstName: 'Lisa',
+      lastName: 'Johnson',
+      status: 'pending_approval',
+      createdAt: '2024-06-20',
+      lastLogin: '',
+      createdBy: '2',
+      registrationToken: generateSecureToken(),
+      passwordSet: false,
+      passwordHash: '',
+      passwordSalt: '',
+      loginAttempts: 0,
+      tokenExpiry: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+    }
+  ];
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
@@ -76,45 +97,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
     isLoading: true
   });
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<SecureUser[]>([]);
+  const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
 
   useEffect(() => {
-    // Check for stored auth state
-    const storedUser = localStorage.getItem('campaign_user');
-    const storedUsers = localStorage.getItem('campaign_users');
+    // Initialize secure users
+    const secureUsers = createSecureMockUsers();
+    const storedUsers = localStorage.getItem('campaign_secure_users');
     
     if (storedUsers) {
       try {
-        setUsers(JSON.parse(storedUsers));
+        const parsedUsers = JSON.parse(storedUsers);
+        setUsers(parsedUsers);
       } catch {
-        localStorage.setItem('campaign_users', JSON.stringify(mockUsers));
+        setUsers(secureUsers);
+        localStorage.setItem('campaign_secure_users', JSON.stringify(secureUsers));
       }
     } else {
-      localStorage.setItem('campaign_users', JSON.stringify(mockUsers));
+      setUsers(secureUsers);
+      localStorage.setItem('campaign_secure_users', JSON.stringify(secureUsers));
     }
 
-    if (storedUser) {
+    // Check for valid session
+    const storedSession = localStorage.getItem('campaign_session');
+    if (storedSession) {
       try {
-        const user = JSON.parse(storedUser);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false
-        });
+        const session = JSON.parse(storedSession);
+        if (!isTokenExpired(session.expiry)) {
+          const user = secureUsers.find(u => u.id === session.userId);
+          if (user) {
+            setAuthState({
+              user: convertSecureUserToUser(user),
+              isAuthenticated: true,
+              isLoading: false
+            });
+            return;
+          }
+        }
+        localStorage.removeItem('campaign_session');
       } catch {
-        localStorage.removeItem('campaign_user');
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+        localStorage.removeItem('campaign_session');
       }
-    } else {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
     }
+    
+    setAuthState(prev => ({ ...prev, isLoading: false }));
   }, []);
 
+  const convertSecureUserToUser = (secureUser: SecureUser): User => {
+    const { passwordHash, passwordSalt, sessionToken, sessionExpiry, loginAttempts, lockedUntil, tokenExpiry, ...user } = secureUser;
+    return user;
+  };
+
+  const isAccountLocked = (user: SecureUser): boolean => {
+    if (!user.lockedUntil) return false;
+    return new Date(user.lockedUntil) > new Date();
+  };
+
   const login = async (email: string, password: string) => {
-    const user = users.find(u => u.email === email);
+    // Validate input
+    const validation = validateInput(loginSchema, { email: sanitizeInput(email), password });
+    if (!validation.success) {
+      throw new Error(validation.errors?.join(', ') || 'Invalid input');
+    }
+
+    // Rate limiting
+    if (!checkRateLimit(`login_${email}`, 5, 15 * 60 * 1000)) {
+      throw new Error('Too many login attempts. Please try again in 15 minutes.');
+    }
+
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (!user) {
+      // Log failed attempt
+      setLoginAttempts(prev => [...prev, {
+        email,
+        timestamp: new Date().toISOString(),
+        success: false
+      }]);
       throw new Error('Invalid credentials');
+    }
+
+    // Check if account is locked
+    if (isAccountLocked(user)) {
+      throw new Error('Account is temporarily locked due to multiple failed login attempts.');
     }
 
     if (!user.passwordSet) {
@@ -129,26 +194,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Your account has been deactivated. Please contact an administrator.');
     }
 
-    if (password === 'password123') {
-      const updatedUser = { ...user, lastLogin: new Date().toISOString() };
+    // Verify password
+    const isValidPassword = verifyPassword(password, user.passwordHash, user.passwordSalt);
+    
+    if (!isValidPassword) {
+      // Increment login attempts
+      const updatedUser = {
+        ...user,
+        loginAttempts: user.loginAttempts + 1,
+        lockedUntil: user.loginAttempts + 1 >= DEFAULT_SECURITY_CONFIG.maxLoginAttempts 
+          ? new Date(Date.now() + DEFAULT_SECURITY_CONFIG.lockoutDurationMs).toISOString()
+          : undefined
+      };
+      
       const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
-      
       setUsers(updatedUsers);
-      localStorage.setItem('campaign_users', JSON.stringify(updatedUsers));
-      localStorage.setItem('campaign_user', JSON.stringify(updatedUser));
+      localStorage.setItem('campaign_secure_users', JSON.stringify(updatedUsers));
       
-      setAuthState({
-        user: updatedUser,
-        isAuthenticated: true,
-        isLoading: false
-      });
-    } else {
+      // Log failed attempt
+      setLoginAttempts(prev => [...prev, {
+        email,
+        timestamp: new Date().toISOString(),
+        success: false
+      }]);
+      
       throw new Error('Invalid credentials');
     }
+
+    // Successful login - create session
+    const sessionToken = generateSessionToken();
+    const sessionExpiry = new Date(Date.now() + DEFAULT_SECURITY_CONFIG.sessionExpiryHours * 60 * 60 * 1000).toISOString();
+    
+    const updatedUser = {
+      ...user,
+      lastLogin: new Date().toISOString(),
+      loginAttempts: 0,
+      lockedUntil: undefined,
+      sessionToken,
+      sessionExpiry
+    };
+    
+    const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
+    setUsers(updatedUsers);
+    localStorage.setItem('campaign_secure_users', JSON.stringify(updatedUsers));
+    
+    // Store session
+    localStorage.setItem('campaign_session', JSON.stringify({
+      userId: user.id,
+      token: sessionToken,
+      expiry: sessionExpiry
+    }));
+    
+    // Log successful attempt
+    setLoginAttempts(prev => [...prev, {
+      email,
+      timestamp: new Date().toISOString(),
+      success: true
+    }]);
+    
+    setAuthState({
+      user: convertSecureUserToUser(updatedUser),
+      isAuthenticated: true,
+      isLoading: false
+    });
   };
 
   const logout = () => {
-    localStorage.removeItem('campaign_user');
+    localStorage.removeItem('campaign_session');
     setAuthState({
       user: null,
       isAuthenticated: false,
@@ -161,6 +273,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Not authenticated');
     }
 
+    // Validate input
+    const validation = validateInput(createUserSchema, {
+      ...userData,
+      email: sanitizeInput(userData.email),
+      firstName: sanitizeInput(userData.firstName),
+      lastName: sanitizeInput(userData.lastName)
+    });
+    if (!validation.success) {
+      throw new Error(validation.errors?.join(', ') || 'Invalid input');
+    }
+
     // Check permissions
     if (authState.user.role === 'volunteer') {
       throw new Error('Volunteers cannot create users');
@@ -171,12 +294,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Check if email already exists
-    if (users.find(u => u.email === userData.email)) {
+    if (users.find(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
       throw new Error('Email already exists');
     }
 
-    const newUser: User = {
-      id: Date.now().toString(),
+    const registrationToken = generateSecureToken();
+    const tokenExpiry = new Date(Date.now() + DEFAULT_SECURITY_CONFIG.tokenExpiryHours * 60 * 60 * 1000).toISOString();
+
+    const newUser: SecureUser = {
+      id: generateSecureToken().substring(0, 16),
       email: userData.email,
       firstName: userData.firstName,
       lastName: userData.lastName,
@@ -187,17 +313,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       createdAt: new Date().toISOString(),
       lastLogin: '',
       createdBy: authState.user.id,
-      registrationToken: `token-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      passwordSet: false
+      registrationToken,
+      passwordSet: false,
+      passwordHash: '',
+      passwordSalt: '',
+      loginAttempts: 0,
+      tokenExpiry
     };
 
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
-    localStorage.setItem('campaign_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('campaign_secure_users', JSON.stringify(updatedUsers));
 
-    const registrationLink = `${window.location.origin}/register/${newUser.registrationToken}`;
+    const registrationLink = `${window.location.origin}/register/${registrationToken}`;
 
-    return { user: newUser, registrationLink };
+    return { user: convertSecureUserToUser(newUser), registrationLink };
+  };
+
+  const completeRegistration = async (data: RegistrationData) => {
+    // Validate input
+    const validation = validateInput(registrationSchema, {
+      ...data,
+      firstName: data.firstName ? sanitizeInput(data.firstName) : undefined,
+      lastName: data.lastName ? sanitizeInput(data.lastName) : undefined
+    });
+    if (!validation.success) {
+      throw new Error(validation.errors?.join(', ') || 'Invalid input');
+    }
+
+    const user = users.find(u => u.registrationToken === data.token);
+    
+    if (!user) {
+      throw new Error('Invalid registration token');
+    }
+
+    // Check token expiry
+    if (user.tokenExpiry && isTokenExpired(user.tokenExpiry, DEFAULT_SECURITY_CONFIG.tokenExpiryHours)) {
+      throw new Error('Registration token has expired');
+    }
+
+    const { hash, salt } = hashPassword(data.password);
+
+    const updatedUser = {
+      ...user,
+      passwordSet: true,
+      passwordHash: hash,
+      passwordSalt: salt,
+      registrationToken: undefined,
+      tokenExpiry: undefined,
+      firstName: data.firstName || user.firstName,
+      lastName: data.lastName || user.lastName
+    };
+
+    const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
+    setUsers(updatedUsers);
+    localStorage.setItem('campaign_secure_users', JSON.stringify(updatedUsers));
   };
 
   const approveUser = async (userId: string) => {
@@ -210,7 +380,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     setUsers(updatedUsers);
-    localStorage.setItem('campaign_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('campaign_secure_users', JSON.stringify(updatedUsers));
   };
 
   const rejectUser = async (userId: string) => {
@@ -220,35 +390,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const updatedUsers = users.filter(user => user.id !== userId);
     setUsers(updatedUsers);
-    localStorage.setItem('campaign_users', JSON.stringify(updatedUsers));
-  };
-
-  const completeRegistration = async (data: RegistrationData) => {
-    const user = users.find(u => u.registrationToken === data.token);
-    
-    if (!user) {
-      throw new Error('Invalid registration token');
-    }
-
-    const updatedUser = {
-      ...user,
-      passwordSet: true,
-      registrationToken: undefined,
-      firstName: data.firstName || user.firstName,
-      lastName: data.lastName || user.lastName
-    };
-
-    const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
-    setUsers(updatedUsers);
-    localStorage.setItem('campaign_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('campaign_secure_users', JSON.stringify(updatedUsers));
   };
 
   const validateToken = (token: string): User | null => {
-    return users.find(u => u.registrationToken === token) || null;
+    const user = users.find(u => u.registrationToken === token);
+    if (!user) return null;
+    
+    // Check token expiry
+    if (user.tokenExpiry && isTokenExpired(user.tokenExpiry, DEFAULT_SECURITY_CONFIG.tokenExpiryHours)) {
+      return null;
+    }
+    
+    return convertSecureUserToUser(user);
   };
 
-  const getAllUsers = () => users;
-  const getPendingUsers = () => users.filter(u => u.status === 'pending_approval');
+  const getAllUsers = () => users.map(convertSecureUserToUser);
+  const getPendingUsers = () => users.filter(u => u.status === 'pending_approval').map(convertSecureUserToUser);
 
   const hasRole = (role: UserRole) => {
     return authState.user?.role === role;

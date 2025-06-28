@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
-import { Target, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Target, Eye, EyeOff, CheckCircle, AlertTriangle, Check, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { User } from '@/types/auth';
+import { validatePasswordStrength } from '@/utils/security';
 
 export function RegistrationForm() {
   const { token } = useParams<{ token: string }>();
@@ -23,6 +24,7 @@ export function RegistrationForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState({ isValid: false, errors: [] as string[] });
 
   useEffect(() => {
     if (token) {
@@ -35,22 +37,30 @@ export function RegistrationForm() {
     }
   }, [token, validateToken]);
 
+  useEffect(() => {
+    if (password) {
+      setPasswordValidation(validatePasswordStrength(password));
+    } else {
+      setPasswordValidation({ isValid: false, errors: [] });
+    }
+  }, [password]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!passwordValidation.isValid) {
+      toast({
+        title: "Password requirements not met",
+        description: "Please ensure your password meets all security requirements.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (password !== confirmPassword) {
       toast({
         title: "Passwords don't match",
         description: "Please make sure both passwords are the same.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long.",
         variant: "destructive",
       });
       return;
@@ -208,6 +218,27 @@ export function RegistrationForm() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                
+                {password && (
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center space-x-2">
+                      {passwordValidation.isValid ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <X className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className={passwordValidation.isValid ? "text-green-600" : "text-red-600"}>
+                        Password meets security requirements
+                      </span>
+                    </div>
+                    {passwordValidation.errors.map((error, index) => (
+                      <div key={index} className="flex items-center space-x-2 text-red-600">
+                        <X className="w-3 h-3" />
+                        <span className="text-xs">{error}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -220,12 +251,18 @@ export function RegistrationForm() {
                   placeholder="Confirm your password"
                   required
                 />
+                {confirmPassword && password !== confirmPassword && (
+                  <div className="flex items-center space-x-2 text-red-600 text-sm">
+                    <X className="w-4 h-4" />
+                    <span>Passwords do not match</span>
+                  </div>
+                )}
               </div>
 
               <Button 
                 type="submit" 
                 className="w-full bg-primary-500 hover:bg-primary-600"
-                disabled={isLoading}
+                disabled={isLoading || !passwordValidation.isValid || password !== confirmPassword}
               >
                 {isLoading ? "Setting up account..." : "Complete Registration"}
               </Button>
